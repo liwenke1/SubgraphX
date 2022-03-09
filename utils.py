@@ -4,6 +4,16 @@ import rdkit.Chem as Chem
 import matplotlib.pyplot as plt
 from textwrap import wrap
 
+def type_conversion(x, edge_index, edge_attr):
+    graph = DGLGraph()
+    x=x.cpu()
+    graph.add_nodes(len(x), data={'features': torch.FloatTensor(x)})
+    edge_index_list = edge_index.cpu().t().numpy().tolist()
+    edge_attr_list = edge_attr.cpu().numpy().tolist()
+    for i in range(len(edge_index_list)):
+        graph.add_edges(edge_index_list[i][0], edge_index_list[i][1], data={'etype': torch.LongTensor([edge_attr_list[i][0]])})
+    return graph
+
 
 def find_closest_node_result(results, max_nodes):
     """ return the highest reward graph node constraining to the subgraph size """
@@ -24,7 +34,7 @@ class PlotUtils():
 
     def plot(self, graph, nodelist, figname, **kwargs):
         """ plot function for different dataset """
-        if self.dataset_name.lower() == 'BA_2motifs'.lower():
+        if self.dataset_name.lower() == ['BA_2motifs'.lower(), 'devign'] :
             self.plot_ba2motifs(graph, nodelist, figname=figname)
         elif self.dataset_name.lower() in ['bbbp', 'mutag']:
             x = kwargs.get('x')

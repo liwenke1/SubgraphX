@@ -1,3 +1,4 @@
+from lib2to3.pytree import Node
 import os
 import glob
 import json
@@ -34,6 +35,31 @@ def split(data, batch):
     slices['edge_index'] = edge_slice
     slices['y'] = torch.arange(0, batch[-1] + 2, dtype=torch.long)
     return data, slices
+
+
+def read_json(filename):
+    #读取文件
+    with open(filename,'r') as f:
+        file = json.load(f)
+    #文件内容读取到torch.tensor()中
+    x = torch.tensor(file['node_features'],dtype=torch.float64)
+
+    edge_index_list = []
+    for edge in file['graph']:
+        edge_index_list.append([edge[0],edge[2]])
+    edge_index = torch.tensor(edge_index_list,dtype=torch.long).t()
+    
+    edge_attr_list = []
+    for edge in file['graph']:
+        edge_attr_list.append([edge[1]])
+    edge_attr = torch.tensor(edge_attr_list)
+
+    y=[]
+    y.append([file['target']])
+    y=torch.tensor(y)
+    
+    data=Data(x=x,edge_index=edge_index,edge_attr=edge_attr,y=y)
+    return data
 
 
 def read_file(folder, prefix, name):
@@ -121,6 +147,8 @@ def get_dataset(dataset_dir, dataset_name, task=None):
         return load_MolecueNet(dataset_dir, dataset_name, task)
     elif dataset_name.lower() in sentigraph_names:
         return load_SeniGraph(dataset_dir, dataset_name)
+    elif dataset_name.lower == 'devign':
+        return load_Devign(dataset_dir, dataset_name)
     else:
         raise NotImplementedError
 
@@ -301,6 +329,32 @@ class BA2MotifDataset(InMemoryDataset):
         torch.save(self.collate(data_list), self.processed_paths[0])
 
 
+class Devign(InMemoryDataset):
+    def __init__(self, root, name, transform=None, pre_transform=None):
+        self.name = name
+        super(Devign, self).__init__(root, transform, pre_transform)
+        self.data, self.slices = torch.load(self.processed_paths[0])
+
+    @property
+    def processed_file_names(self):
+        return [f'Devign.pt']
+
+    def process(self):
+        data_list = []
+        with open('/home/DIG-main/dig/xgraph/GNNExplainer/benchmark/data/dataset_rec.txt','r') as f:
+            dataset_path = f.readlines()
+        i = 0
+        for path in dataset_path:
+            data = read_json(path.strip())
+            if(data.num_nodes >= 15):
+                data_list.append(data)
+                i += 1
+                if i > 7:
+                    break
+        data, slices = self.collate(data_list)
+        torch.save((data, slices), self.processed_paths[0])
+
+
 def load_MUTAG(dataset_dir, dataset_name):
     """ 188 molecules where label = 1 denotes mutagenic effect """
     dataset = MUTAGDataset(root=dataset_dir, name=dataset_name)
@@ -334,6 +388,14 @@ def load_MolecueNet(dataset_dir, dataset_name, task=None):
 
 def load_SeniGraph(dataset_dir, dataset_name):
     dataset = SentiGraphDataset(root=dataset_dir, name=dataset_name)
+    return dataset
+
+
+def load_Devign(dataset_dir, dataset_name):
+    dataset = Devign(root=dataset_dir, name=dataset_name)
+    dataset.data.x = dataset.data.x.float()
+    dataset.node_type_dict = None
+    dataset.node_color = None
     return dataset
 
 

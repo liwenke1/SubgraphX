@@ -1,4 +1,5 @@
 import os
+from turtle import Turtle
 import torch
 from tqdm import tqdm
 from models import GnnNets
@@ -7,8 +8,8 @@ from forgraph.mcts import MCTS, reward_func
 from torch_geometric.data import Batch
 from Configures import data_args, mcts_args, reward_args, model_args, train_args
 from shapley import GnnNets_GC2value_func, gnn_score
-from utils import PlotUtils, find_closest_node_result
-
+from utils import PlotUtils, find_closest_node_result, type_conversion
+from models.Devign import DevignModel, config_model
 
 def pipeline(max_nodes):
     dataset = get_dataset(data_args.dataset_dir, data_args.dataset_name)
@@ -26,11 +27,8 @@ def pipeline(max_nodes):
                                 seed=data_args.seed)
         data_indices = loader['test'].dataset.indices
 
-    gnnNets = GnnNets(input_dim, output_dim, model_args)
-    checkpoint = torch.load(mcts_args.explain_model_path)
-    gnnNets.update_state_dict(checkpoint['net'])
-    gnnNets.to_device()
-    gnnNets.eval()
+    Devign = DevignModel(model_args, max_edge_types=model_args.max_edge_types)
+    config_model(Devign, model_args)
 
     save_dir = os.path.join('./results',
                             f"{mcts_args.dataset_name}_"
@@ -44,12 +42,13 @@ def pipeline(max_nodes):
     for i in tqdm(data_indices):
         # get data and prediction
         data = dataset[i]
-        _, probs, _ = gnnNets(Batch.from_data_list([data.clone()]))
+        graph = type_conversion(data.x, data.edge_index, data.edge_attr)
+        _, probs, _ = Devign(graph, cuda=True)
         prediction = probs.squeeze().argmax(-1).item()
         original_score = probs.squeeze()[prediction]
 
         # get the reward func
-        value_func = GnnNets_GC2value_func(gnnNets, target_class=prediction)
+        value_func = GnnNets_GC2value_func(Devign, target_class=prediction)
         payoff_func = reward_func(reward_args, value_func)
 
         # find the paths and build the graph
@@ -57,6 +56,7 @@ def pipeline(max_nodes):
 
         # mcts for l_shapely
         mcts_state_map = MCTS(data.x, data.edge_index,
+                              edge_attr=data.edge_attr,
                               score_func=payoff_func,
                               n_rollout=mcts_args.rollout,
                               min_atoms=mcts_args.min_atoms,

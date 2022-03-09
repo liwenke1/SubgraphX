@@ -12,6 +12,7 @@ from scipy.special import comb
 from itertools import combinations
 from torch_geometric.utils import to_networkx
 from torch_geometric.data import Data, Batch, Dataset, DataLoader
+from utils import type_conversion
 
 
 def value_func_decorator(value_func):
@@ -30,7 +31,8 @@ def value_func_decorator(value_func):
 def GnnNets_GC2value_func(gnnNets, target_class):
     def value_func(batch):
         with torch.no_grad():
-            logits, prob, _ = gnnNets(batch)
+            graph = type_conversion(batch.x, batch.edge_index, batch.edge_attr)
+            logits, prob, _ = gnnNets(graph, cuda=True)
             score = prob[:, target_class]
         return score
     return value_func
@@ -246,9 +248,10 @@ def gnn_score(coalition: list, data: Data, value_func: str,
     mask = torch.zeros(num_nodes).type(torch.float32)
     mask[coalition] = 1.0
     ret_x, ret_edge_index = subgraph_build_func(data.x, data.edge_index, mask)
-    mask_data = Data(x=ret_x, edge_index=ret_edge_index)
-    mask_data = Batch.from_data_list([mask_data])
-    score = value_func(mask_data)
+    #mask_data = Data(x=ret_x, edge_index=ret_edge_index)
+    #mask_data = Batch.from_data_list([mask_data])
+    graph = type_conversion(ret_x, ret_edge_index, data.edge_attr)
+    score = value_func(graph, cuda=True)
     # get the score of predicted class for graph or specific node idx
     return score.item()
 

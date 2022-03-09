@@ -32,12 +32,12 @@ class MCTSNode():
 
 
 class MCTS():
-    def __init__(self, X: torch.Tensor, edge_index: torch.Tensor, n_rollout: int,
-                 min_atoms: int, c_puct: float, expand_atoms: int, score_func):
+    def __init__(self, X: torch.Tensor, edge_index: torch.Tensor, edge_attr: torch.Tensor,
+                 n_rollout: int, min_atoms: int, c_puct: float, expand_atoms: int, score_func):
         """ graph is a networkX graph """
         self.X = X
         self.edge_index = edge_index
-        self.data = Data(x=self.X, edge_index=self.edge_index)
+        self.data = Data(x=self.X, edge_index=self.edge_index, edge_attr=self.edge_attr)
         self.graph = to_networkx(self.data, to_undirected=True)
         self.data = Batch.from_data_list([self.data])
         self.num_nodes = self.graph.number_of_nodes()
