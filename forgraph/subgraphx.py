@@ -28,7 +28,7 @@ def pipeline(max_nodes):
         data_indices = loader['test'].dataset.indices
 
     Devign = DevignModel(model_args, max_edge_types=model_args.max_edge_types)
-    config_model(Devign, model_args)
+    config_model(Devign, mcts_args)
 
     save_dir = os.path.join('./results',
                             f"{mcts_args.dataset_name}_"

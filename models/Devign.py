@@ -7,7 +7,7 @@ from dgl import DGLGraph
 
 def config_model(model, args):
     model.to(args.device_id)
-    ckpt = torch.load(args.model_path)
+    ckpt = torch.load(args.explain_model_path)
     model.load_state_dict(ckpt)
     print(f'Loading best checkpoint ... ')
 

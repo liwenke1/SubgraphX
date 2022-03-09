@@ -147,7 +147,7 @@ def get_dataset(dataset_dir, dataset_name, task=None):
         return load_MolecueNet(dataset_dir, dataset_name, task)
     elif dataset_name.lower() in sentigraph_names:
         return load_SeniGraph(dataset_dir, dataset_name)
-    elif dataset_name.lower == 'devign':
+    elif dataset_name.lower() == 'devign':
         return load_Devign(dataset_dir, dataset_name)
     else:
         raise NotImplementedError

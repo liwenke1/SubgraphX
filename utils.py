@@ -1,8 +1,11 @@
+import torch
 import numpy as np
 import networkx as nx
 import rdkit.Chem as Chem
 import matplotlib.pyplot as plt
 from textwrap import wrap
+from dgl import DGLGraph
+
 
 def type_conversion(x, edge_index, edge_attr):
     graph = DGLGraph()
@@ -34,7 +37,7 @@ class PlotUtils():
 
     def plot(self, graph, nodelist, figname, **kwargs):
         """ plot function for different dataset """
-        if self.dataset_name.lower() == ['BA_2motifs'.lower(), 'devign'] :
+        if self.dataset_name.lower() in ['BA_2motifs'.lower(), 'devign'] :
             self.plot_ba2motifs(graph, nodelist, figname=figname)
         elif self.dataset_name.lower() in ['bbbp', 'mutag']:
             x = kwargs.get('x')

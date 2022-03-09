@@ -65,6 +65,7 @@ class MarginalSubgraphDataset(Dataset):
         self.num_nodes = data.num_nodes
         self.X = data.x
         self.edge_index = data.edge_index
+        self.edge_attr = data.edge_attr
         self.device = self.X.device
 
         self.label = data.y
@@ -78,8 +79,8 @@ class MarginalSubgraphDataset(Dataset):
     def __getitem__(self, idx):
         exclude_graph_X, exclude_graph_edge_index = self.subgraph_build_func(self.X, self.edge_index, self.exclude_mask[idx])
         include_graph_X, include_graph_edge_index = self.subgraph_build_func(self.X, self.edge_index, self.include_mask[idx])
-        exclude_data = Data(x=exclude_graph_X, edge_index=exclude_graph_edge_index)
-        include_data = Data(x=include_graph_X, edge_index=include_graph_edge_index)
+        exclude_data = Data(x=exclude_graph_X, edge_index=exclude_graph_edge_index, edge_attr=self.edge_attr)
+        include_data = Data(x=include_graph_X, edge_index=include_graph_edge_index, edge_attr=self.edge_attr)
         return exclude_data, include_data
 
 
@@ -248,10 +249,8 @@ def gnn_score(coalition: list, data: Data, value_func: str,
     mask = torch.zeros(num_nodes).type(torch.float32)
     mask[coalition] = 1.0
     ret_x, ret_edge_index = subgraph_build_func(data.x, data.edge_index, mask)
-    #mask_data = Data(x=ret_x, edge_index=ret_edge_index)
-    #mask_data = Batch.from_data_list([mask_data])
-    graph = type_conversion(ret_x, ret_edge_index, data.edge_attr)
-    score = value_func(graph, cuda=True)
+    mask_data = Data(x=ret_x, edge_index=ret_edge_index, edge_attr=data.edge_attr)
+    score = value_func(mask_data)
     # get the score of predicted class for graph or specific node idx
     return score.item()
 

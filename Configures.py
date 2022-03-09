@@ -52,7 +52,7 @@ class MCTSParser(DataParser, ModelParser):
     def process_args(self) -> None:
         self.explain_model_path = os.path.join(self.checkpoint,
                                                self.dataset_name,
-                                               f"{self.model_name}_best.pth")
+                                               f"{self.model_name}_best.ckpt")
 
 
 class RewardParser(Tap):

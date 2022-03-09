@@ -11,7 +11,6 @@ from pipeline import MCTSNode
 
 
 class MCTSNode():
-
     def __init__(self, coalition: list, data: Data,
                  ori_graph: nx.Graph, c_puct: float = 10.0,
                  W: float = 0, N: int = 0, P: float = 0):
@@ -37,9 +36,9 @@ class MCTS():
         """ graph is a networkX graph """
         self.X = X
         self.edge_index = edge_index
+        self.edge_attr = edge_attr
         self.data = Data(x=self.X, edge_index=self.edge_index, edge_attr=self.edge_attr)
         self.graph = to_networkx(self.data, to_undirected=True)
-        self.data = Batch.from_data_list([self.data])
         self.num_nodes = self.graph.number_of_nodes()
         self.score_func = score_func
         self.n_rollout = n_rollout
